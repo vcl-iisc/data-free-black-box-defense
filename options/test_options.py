@@ -19,7 +19,7 @@ def test_options():
 
     arg_parser.add_argument('--gpu_id', type=str, default="0")
 
-    arg_parser.add_argument("--name", type=str, help="name by which model checkpoints are saved")
+    arg_parser.add_argument("--name", type=str, default="" , help="name by which model checkpoints are saved")
 
     # path to black box victim model path and its architecture name
     arg_parser.add_argument("--victim_model_path", type=str,
