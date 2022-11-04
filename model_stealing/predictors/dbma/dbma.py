@@ -31,9 +31,9 @@ class DBMA(nn.Module):
     def eval(self):
         self.regen_network.eval()
 
-    def train(self, **kwargs):
+    def train(self, mode=True, **kwargs):
         # surrogate and victim model  is always set to eval mode
-        self.regen_network.train()
+        self.regen_network.train(mode)
 
     def forward(self, clean_images, adv_images=None, train=True):
         output = {}

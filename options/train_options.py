@@ -24,6 +24,7 @@ def train_options():
     arg_parser.add_argument('--n_epochs_decay', type=int, default=100, )
     arg_parser.add_argument('--lr_decay_iters', type=int, default=50, )
     arg_parser.add_argument('--gpu_id', type=str, default="0")
+    arg_parser.add_argument("--continue_train", action='store_true')
 
     arg_parser.add_argument("--name", type=str, help="name by which model checkpoints are saved")
 

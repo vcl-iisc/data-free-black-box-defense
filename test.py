@@ -22,6 +22,7 @@ if __name__ == "__main__":
     state_dict = torch.load("./checkpoints/{}/{}.pth".format(args.name, args.epoch))
     dbma.load_state_dict(state_dict["model_state_dict"])
     dbma.to(device)
+    dbma.eval()
 
     # attack performed on surrogate models
     normalization = torchvision.transforms.Normalize(mean=(0.5), std=(0.5)).to(device)
@@ -42,10 +43,10 @@ if __name__ == "__main__":
         adv_images = attack(clean_images, labels)
         adv_images = adv_images.to(device)
 
-        clean_images, adv_images = normalization(clean_images), normalization(adv_images)
-
-        predictions = dbma(clean_images, adv_images, train=False)
-        metric.update(predictions, labels)
+        with torch.no_grad():
+            clean_images, adv_images = normalization(clean_images), normalization(adv_images)
+            predictions = dbma(clean_images, adv_images, train=False)
+            metric.update(predictions, labels)
 
     accuracy = metric.compute()
 

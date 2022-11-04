@@ -15,7 +15,7 @@ def get_train_attack(dataset, attack, model):
         # eps, alpha, steps = 0.3, 0.01, 100
         eps, alpha, steps = 0.2, 0.02, 40
     elif dataset == "svhn":
-        print('Attack using PGD on fmnist dataset')
+        print('Attack using PGD on svhn dataset')
         # eps, alpha, steps = 0.3, 0.01, 100
         eps, alpha, steps = 0.02, 0.02 / 10, 10
     else:
