@@ -24,13 +24,13 @@ class DBMA_Loss(nn.Module):
         loss_dict = {}
 
         if "cosim" in self.losses:
-            loss_dict["cosim"] = self.cosim_lambda * self.cosim(predictions["pred_clean"],
-                                                                predictions["pred_regen_clean"])
+            loss_dict["cosim"] = self.cosim_lambda * self.cosim(predictions["pred_clean_images"],
+                                                                predictions["pred_regen_clean_images"])
 
         if "kl" in self.losses:
             loss_dict["kl"] = self.kl_lambda * self.kl_criterion(
-                F.log_softmax(predictions["pred_regen_adv"] / self.kl_temp, dim=1),
-                F.softmax(predictions["pred_regen_clean"].detach() / self.kl_temp, dim=1)) * (
+                F.log_softmax(predictions["pred_regen_adv_images"] / self.kl_temp, dim=1),
+                F.softmax(predictions["pred_regen_clean_images"].detach() / self.kl_temp, dim=1)) * (
                                       self.kl_temp * self.kl_temp)
 
         if "wc" in self.losses:

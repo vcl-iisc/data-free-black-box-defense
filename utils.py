@@ -24,14 +24,7 @@ def create_dbma_model(args=None):
     wnr = WNR(args.wvlt, args.mode, args.levels, args.keep_percentage)
     norm_layer = get_norm_layer("instance")
     regen = UnetGenerator(3, 3, 5, 64, norm_layer, False)
-
-    if args.victim_model_name is not None:
-        victim_model = get_model(args.victim_model_name, args.victim_model_path)
-    else:
-        victim_model = None
-
-    surrogate_model = get_model(args.surrogate_model_name, args.surrogate_model_path)
-    dbma = DBMA(wnr, regen, surrogate_model, victim_model)
+    dbma = DBMA(wnr, regen)
     return dbma
 
 

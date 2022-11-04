@@ -19,13 +19,13 @@ class Metric(Accuracy):
         self.key = "train" if train else "test"
 
     def update(self, predictions, labels):
-        accuracy = {"{}_clean_acc".format(self.key): self.clean_acc(predictions["pred_clean"], labels),
-                    "{}_wv_clean_acc".format(self.key): self.wv_clean_acc(predictions["pred_wv_clean"], labels),
-                    "{}_regen_clean_acc".format(self.key): self.regen_clean_acc(predictions["pred_regen_clean"],
+        accuracy = {"{}_clean_acc".format(self.key): self.clean_acc(predictions["pred_clean_images"], labels),
+                    "{}_wv_clean_acc".format(self.key): self.wv_clean_acc(predictions["pred_clean_wv_images"], labels),
+                    "{}_regen_clean_acc".format(self.key): self.regen_clean_acc(predictions["pred_clean_regen_images"],
                                                                                 labels),
-                    "{}_adv_acc".format(self.key): self.adv_acc(predictions["pred_adv"], labels),
-                    "{}_wv_adv_acc".format(self.key): self.wv_adv_acc(predictions["pred_wv_adv"], labels),
-                    "{}_regen_adv_acc".format(self.key): self.regen_adv_acc(predictions["pred_regen_adv"], labels)}
+                    "{}_adv_acc".format(self.key): self.adv_acc(predictions["pred_adv_images"], labels),
+                    "{}_wv_adv_acc".format(self.key): self.wv_adv_acc(predictions["pred_adv_wv_images"], labels),
+                    "{}_regen_adv_acc".format(self.key): self.regen_adv_acc(predictions["pred_adv_regen_images"], labels)}
 
         return accuracy
 

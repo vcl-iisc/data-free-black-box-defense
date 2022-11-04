@@ -8,8 +8,11 @@ from adversarial_attacks import get_train_attack
 from datasets.synthetic_dataset import SyntheticDataset
 from metrics import Metric
 from options import test_options
-from utils import create_dbma_model
+from utils import create_dbma_model, get_model
 import tqdm
+
+
+
 
 if __name__ == "__main__":
 
@@ -33,7 +36,10 @@ if __name__ == "__main__":
         dbma.to(device)
         dbma.eval()
 
-        attack = get_train_attack(args.dataset, args.attack, nn.Sequential(normalization, dbma.surrogate_model))
+        surrogate_model = get_model(args.surrogate_model_name, args.surrogate_model_path).to(device)
+
+        attack = get_train_attack(args.dataset, args.attack, nn.Sequential(normalization, surrogate_model))
+
         synthetic_dataset = SyntheticDataset(args.synthetic_dataset_path, attack)
         train_dataloader = DataLoader(synthetic_dataset, batch_size=args.batch_size, shuffle=False)
 
@@ -43,10 +49,26 @@ if __name__ == "__main__":
         for i, data in tqdm.tqdm(enumerate(train_dataloader)):
             clean_images, adv_images, labels = data
             with torch.no_grad():
+
                 clean_images = normalization(clean_images).to(device)
                 adv_images = normalization(adv_images).to(device)
                 labels = labels.to(device)
-                predictions = dbma(clean_images, adv_images, train=False)
+
+                output_clean = dbma(clean_images)
+                output_clean = {"clean_"+k : v for k , v in output_clean.items()}
+
+                output_adv = dbma(adv_images)
+                output_adv = {"adv_" + k: v for k, v in output_adv.items()}
+
+                output_clean.update(output_adv)
+                output = output_clean   # alias output
+
+                predictions = {}
+                for k, v in output.items():
+                    prediction = surrogate_model(v)
+                    key = "pred_" + k
+                    predictions[key] = prediction
+
                 metric.update(predictions, labels)
 
         accuracy = metric.compute()
@@ -60,7 +82,6 @@ if __name__ == "__main__":
         j = k-1
         ROC[k] = LCR[j + 1] - LCR[j]
         print(ROC[k].item())
-        #wandb.log({"ROC": ROC[k]})
-        #wandb.log({"LOC" : 1})
+        wandb.log({"ROC": ROC[k].item()})
     
     wandb.finish()
