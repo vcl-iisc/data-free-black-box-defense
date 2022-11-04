@@ -23,9 +23,9 @@ if __name__ == "__main__":
 
     # attack performed on surrogate models
     normalization = torchvision.transforms.Normalize(mean=(0.5), std=(0.5)).to(device)
-
+    max_k = 20
     LCR = []
-    for k in range(1, 20):
+    for k in range(1, max_k+2):
         args.keep_percentage = k  # for different values of coefficient percentage
 
         dbma = create_dbma_model(args=args)  # convert to data parallel
@@ -57,7 +57,7 @@ if __name__ == "__main__":
         LCR.append(LCR_C + LCR_A)
 
     ROC = {}
-    for k in range(1, 51):
+    for k in range(1, max_k+1):
         ROC[k] = LCR[k + 1] - LCR[k]
 
     wandb.log(ROC)
