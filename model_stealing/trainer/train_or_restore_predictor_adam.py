@@ -23,7 +23,10 @@ def train_or_restore_predictor_adam(
     training_was_in_progress = False
     root_optimizer_ckpt_path = f'optimizer_for_{model.name}_state_dict'
     optimizer_ckpt_path = root_optimizer_ckpt_path
-
+    
+    if not os.path.exists('./checkpoints'):
+        os.mkdir("./checkpoints")
+        
     for filename in os.listdir('./checkpoints'):
         if optimizer_ckpt_path in filename:
             training_was_in_progress = True
