@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     args = arg_parser.parse_args()
 
-    wandb.init(project="data_free_black_box_defense_test", name=args.name)
+    wandb.init(project="data_free_black_box_defense_roc", name=args.name)
 
     device = torch.device("cuda:{}".format(args.gpu_id)) if torch.cuda.is_available() else torch.device('cpu')
 
