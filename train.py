@@ -12,13 +12,14 @@ from datasets.synthetic_dataset import SyntheticDataset
 from datasets.utils import load_dataset
 from losses.losses import DBMA_Loss
 from metrics import Metric
-from model_stealing.predictors.dbma.dbma import create_dbma_model
 from options import train_options
 from scheduler import get_scheduler
+from utils import create_dbma_model
 
 if __name__ == "__main__":
 
-    args = train_options.train_options()
+    arg_parser = train_options.train_options()
+    args = arg_parser.parse_args()
 
     wandb.init(project="data_free_black_box_defense_train", name=args.name)
     device = torch.device("cuda:{}".format(args.gpu_id)) if torch.cuda.is_available() else torch.device('cpu')

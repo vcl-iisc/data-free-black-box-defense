@@ -1,5 +1,4 @@
 from .alexnet import Alexnet
-from .dbma.dbma import create_dbma_model
 from .half_alexnet import AlexnetHalf
 from .half_lenet import HalfLeNet
 from .inceptionv3 import InceptionV3

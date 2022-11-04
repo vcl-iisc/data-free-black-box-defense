@@ -30,5 +30,5 @@ def test_options():
                             default="model_stealing/checkpoints/student_resnet18_alexnet.pth")
     arg_parser.add_argument("--surrogate_model_name", type=str, default="resnet18")
 
-    args = arg_parser.parse_args()
-    return args
+
+    return arg_parser

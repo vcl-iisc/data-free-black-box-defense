@@ -2,6 +2,7 @@ import datasets
 import generators
 import predictors
 import trainer
+import utils
 
 device = None
 
@@ -14,7 +15,7 @@ predictor_dict = {
     'alexnet': predictors.Alexnet,
     'alexnet_half': predictors.AlexnetHalf,
     'resnet34': predictors.resnet.ResNet34,
-    "dbma": predictors.dbma.dbma.create_dbma_model
+    "dbma": utils.create_dbma_model
 }
 dataset_dict = {
     'cifar10': datasets.CIFAR10,

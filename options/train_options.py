@@ -35,5 +35,4 @@ def train_options():
 
     arg_parser.add_argument("--synthetic_dataset_path", type=str, default="data/alexnet_resnet18_synthetic_data.pth")
 
-    args = arg_parser.parse_args()
-    return args
+    return arg_parser
