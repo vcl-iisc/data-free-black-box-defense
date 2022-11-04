@@ -32,10 +32,10 @@ class SVHN(object):
             drop_last=True
         )
 
-    def test_dataloader(self, *args, **kwrk):
+    def test_dataloader(self, batch_size=128):
         return torch.utils.data.DataLoader(
             self.test_dataset,
-            batch_size=16,
+            batch_size=batch_size,
             num_workers=2,
             drop_last=False
         )
