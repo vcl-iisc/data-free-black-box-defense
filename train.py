@@ -55,6 +55,8 @@ if __name__ == "__main__":
 
     attack = get_train_attack(args.dataset, args.attack,surrogate_model_prepended_with_normalization)
 
+  
+
     # create synthetic dataset. adversarial images are not already been created the attack is used to create
     synthetic_dataset = SyntheticDataset(args.synthetic_dataset_path, attack)
     train_dataloader = DataLoader(synthetic_dataset, batch_size=args.batch_size, shuffle=True)
@@ -72,12 +74,15 @@ if __name__ == "__main__":
         start = time.time()
 
         for i, data in tqdm.tqdm(enumerate(train_dataloader)):
+            
+            optimizer.zero_grad()  
+
             clean_images, adv_images, labels = data
 
             clean_images = normalization(clean_images).to(device)
             adv_images = normalization(adv_images).to(device)
             labels = labels.to(device)
-
+            
             output_clean = dbma(clean_images)
             output_clean = {"clean_" + k: v for k, v in output_clean.items()}
 
@@ -95,14 +100,14 @@ if __name__ == "__main__":
                 predictions[k] = v
 
             total_loss, loss_dict = criterion(predictions)
-            loss_dict = {k: v.item() for (k, v) in loss_dict.items()}
-
+            
             total_loss.backward()
             optimizer.step()
             metric.update(predictions, labels)
-
+            loss_dict = {k: v.item() for (k, v) in loss_dict.items()}
             if i % 100 == 0:
                 wandb.log(loss_dict)
+                print(loss_dict)
             
 
         accuracy = metric.compute()

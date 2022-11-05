@@ -7,7 +7,6 @@ if __name__ == "__main__":
 
 import torch.nn as nn
 
-
 class DBMA(nn.Module):
 
     def __init__(self, wnr, regenerator_network):
@@ -15,17 +14,15 @@ class DBMA(nn.Module):
         self.wnr = wnr
         self.regen_network = regenerator_network
 
-    def forward(self, clean_images, adv_images=None):
+    def forward(self, clean_images):
         output = {}
 
         wv_clean_images = self.wnr(clean_images)  # output of WNR
         regen_clean_images = self.regen_network(wv_clean_images)  # output of regen network
+       
 
         output["images"] = clean_images
         output["wv_images"] = wv_clean_images  # normalized images
         output["regen_images"] = regen_clean_images
 
         return output
-
-    def parameters(self ):
-        return self.regen_network.parameters()

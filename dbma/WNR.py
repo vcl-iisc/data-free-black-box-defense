@@ -30,7 +30,7 @@ class WNR(nn.Module):
 
         thresh = Csort[:, :, int(np.floor((1 - self.keep) * s))].view(batch_size, channels, 1, 1, 1)
         for l in range(0, self.levels):
-            ind = torch.abs(detail_coeffs[l]) >= thresh
+            ind = torch.abs(detail_coeffs[l]) > thresh
             detail_coeffs[l] *= ind
         images = self.iwt((approx_coeffs, detail_coeffs))
         return images

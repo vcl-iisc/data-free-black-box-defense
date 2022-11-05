@@ -32,8 +32,7 @@ class DBMA_Loss(nn.Module):
         loss_dict = {}
 
         if "cosim" in self.losses:
-            loss_dict["cosim"] = self.cosim_lambda * self.cosim(predictions["pred_clean_images"],
-                                                                predictions["pred_clean_regen_images"].detach())
+            loss_dict["cosim"] = self.cosim_lambda * self.cosim(predictions["pred_clean_regen_images"] , predictions["pred_clean_images"].detach())
 
         if "kl" in self.losses:
             loss_dict["kl"] = self.kl_lambda * self.kl_criterion(
@@ -45,7 +44,7 @@ class DBMA_Loss(nn.Module):
             loss_dict["wc"] = self.wc_lambda * self.wc(predictions["clean_regen_images"], predictions[
                 "clean_images"].detach())  # wc loss is computed on normalized images
 
-        return torch.sum(loss_dict.values()), loss_dict
+        return sum(loss_dict.values()), loss_dict
 
 
 if __name__ == "__main__":

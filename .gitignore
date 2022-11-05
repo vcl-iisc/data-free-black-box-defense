@@ -9,3 +9,4 @@ checkpoints/
 data/
 wandb/
 temp.py
+launch.json
