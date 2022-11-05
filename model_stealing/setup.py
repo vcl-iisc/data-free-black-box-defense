@@ -3,8 +3,10 @@ import generators
 import predictors
 import trainer
 import utils
+from model_stealing.predictors.dbma_defene_model import DBMADefense
 
 device = None
+import torch
 
 predictor_dict = {
     'half_lenet': predictors.HalfLeNet,
@@ -52,47 +54,47 @@ generator_prepare_dict = {
 
 def prepare_teacher(env):
     true_dataset = dataset_dict[env.true_dataset](input_size=env.size)
-    teacher = predictor_dict[env.teacher](
-        name=teacher_name(env),
-        n_outputs=true_dataset.n_classes,
-        input_channels=env.input_nc,
-        opt=env
-    )
-
     if env.teacher != "dbma":
+        teacher = predictor_dict[env.teacher](
+            name=teacher_name(env),
+            n_outputs=true_dataset.n_classes,
+            input_channels=env.input_nc,
+            opt=env
+        )
         teacher.to(device)
         if env.optim == 'sgd':
             trainer.train_or_restore_predictor(teacher, true_dataset)
         else:
             trainer.train_or_restore_predictor_adam(teacher, true_dataset)
     else:
-        import torch
-        state_dict = torch.load(env.regen_path, map_location="cpu")
-        teacher.load_state_dict(state_dict["model_state_dict"])
+        dbma = utils.create_dbma_model(env)
+        dbma.load_state_dict(torch.load(env.dbma_path,map_location="cpu")["model_state_dict"])
+        victim_model = utils.get_model(env.victim_model_name, env.victim_model_path)
+        teacher = DBMADefense(dbma, victim_model)
+        teacher.to(device)
+
     teacher.eval()
     return teacher
 
 
 def prepare_teacher_student(env):
     true_dataset = dataset_dict[env.true_dataset](input_size=env.size)
-
-    print("teacher name : ", teacher_name(env))
-    teacher = predictor_dict[env.teacher](
-        name=teacher_name(env),
-        n_outputs=true_dataset.n_classes,
-        input_channels=env.input_nc,
-    )
-
     if env.teacher != "dbma":
+        teacher = predictor_dict[env.teacher](
+            name=teacher_name(env),
+            n_outputs=true_dataset.n_classes,
+            input_channels=env.input_nc,
+        )
         teacher.to(device)
         if env.optim == 'sgd':
             trainer.train_or_restore_predictor(teacher, true_dataset)
         else:
             trainer.train_or_restore_predictor_adam(teacher, true_dataset)
     else:
-        import torch
-        state_dict = torch.load(env.regen_path, map_location="cpu")
-        teacher.load_state_dict(state_dict["model_state_dict"])
+        dbma = utils.create_dbma_model(env)
+        dbma.load_state_dict(torch.load(env.dbma_path, map_location="cpu")["model_state_dict"])
+        victim_model = utils.get_model(env.victim_model_name, env.victim_model_path)
+        teacher = DBMADefense(dbma, victim_model)
         teacher.to(device)
 
     teacher.eval()
@@ -163,10 +165,10 @@ def student_name(env):
     extra_str = ""
 
     if env.teacher == "dbma":
-        extra_str = env.regen_name
+        extra_str = env.dbma_name+"_"
 
     name = (f'student_{env.student}_teacher_{env.teacher}_{env.true_dataset}_' +
-            f'{env.generator}_' + extra_str +
+            f'{env.generator}_' + f'{extra_str}' +
             f'{env.optim}_{env.epochs}'
             )
 

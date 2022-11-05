@@ -45,7 +45,7 @@ class DBMA_Loss(nn.Module):
             loss_dict["wc"] = self.wc_lambda * self.wc(predictions["clean_regen_images"], predictions[
                 "clean_images"].detach())  # wc loss is computed on normalized images
 
-        return sum(loss_dict.values()), loss_dict
+        return torch.sum(loss_dict.values()), loss_dict
 
 
 if __name__ == "__main__":
