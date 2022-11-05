@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     env = arg_parser.parse_args()
     if env.use_wandb:
-        wandb.init(name="{}_{}_{}".format(env.teacher, env.student, env.epochs), project="black_box")
+        wandb.init(name="{}_{}_{}".format(env.teacher, env.student, env.epochs), project="data_free_black_box_defense_model_stealing")
 
     device = torch.device("cuda:{}".format(env.gpu_id)) if torch.cuda.is_available() else torch.device('cpu')
     setup.device = device

@@ -27,13 +27,12 @@ if __name__ == "__main__":
     device = torch.device("cuda:{}".format(args.gpu_id)) if torch.cuda.is_available() else torch.device('cpu')
 
     # load dbma model
-    dbma = create_dbma_model(args=args)  # TODO convert to data parallel
+    dbma = create_dbma_model(args=args).to(device)  # TODO convert to data parallel
 
     optimizer = torch.optim.Adam(dbma.parameters(), lr=args.lr, betas=(args.beta1, 0.999))  # define args.beta1
     scheduler = get_scheduler(optimizer, args.lr_policy, args.epoch_count, args.n_epochs, args.n_epochs_decay,
                               args.lr_decay_iters)
 
-    dbma.to(device) #TODO try moving this line above
 
     if args.continue_train:
         path = "./checkpoints/{}".format(args.name)
@@ -43,19 +42,18 @@ if __name__ == "__main__":
         scheduler.load_state_dict(state["scheduler_state_dict"])
 
 
-    #dbma = nn.DataParallel(dbma)
 
     criterion = DBMA_Loss(args.loss).to(device)
 
     surrogate_model = get_model(args.surrogate_model_name, args.surrogate_model_path).to(device)
-
-    #surrogate_model = nn.DataParallel(surrogate_model)
-    #surrogate_model = surrogate_model.to(device)
-
     surrogate_model.eval()
 
-    attack = get_train_attack(args.dataset, args.attack,
-                              nn.Sequential(Normalize(mean=[0.5], std=[0.5]).to(device), surrogate_model))
+    normalization = torchvision.transforms.Normalize(mean=(0.5), std=(0.5)).to(device)
+
+    surrogate_model_prepended_with_normalization = nn.Sequential(normalization, surrogate_model)
+    surrogate_model_prepended_with_normalization.eval()
+
+    attack = get_train_attack(args.dataset, args.attack,surrogate_model_prepended_with_normalization)
 
     # create synthetic dataset. adversarial images are not already been created the attack is used to create
     synthetic_dataset = SyntheticDataset(args.synthetic_dataset_path, attack)
@@ -67,8 +65,7 @@ if __name__ == "__main__":
 
     print("number of training images: ", len(train_dataloader) * args.batch_size)
 
-    normalization = torchvision.transforms.Normalize(mean=(0.5), std=(0.5)).to(device)
-
+    
     for epoch in range(args.epoch_count, args.n_epochs + args.n_epochs_decay + 1):
         metric = Metric().to(device)
         loss_dict = {}
@@ -106,7 +103,7 @@ if __name__ == "__main__":
 
             if i % 100 == 0:
                 wandb.log(loss_dict)
-                break
+            
 
         accuracy = metric.compute()
         accuracy = {k: v.item() for (k, v) in accuracy.items()}
@@ -121,7 +118,7 @@ if __name__ == "__main__":
 
         scheduler.step()
 
-        if epoch % 1 == 0:
+        if epoch % 5 == 0:
             start = time.time()
             dbma.eval()
             metric = Metric(train=False).to(device)
@@ -149,19 +146,19 @@ if __name__ == "__main__":
                         predictions[key] = prediction
 
                 metric.update(predictions, labels)
-
+            
             accuracy = metric.compute()
             accuracy = { k:v.item() for k , v in accuracy.items()}
             wandb.log(accuracy)
 
             print("Testing complete in {}s".format(time.time() - start))
             print("Test Accuracy  : ", accuracy)
-
+        
             dbma.train()
 
             state_dict = {
                 'epoch': epoch,
-                'model_state_dict': dbma.module.state_dict(),
+                'model_state_dict': dbma.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'scheduler_state_dict': scheduler.state_dict(),
                 'loss': total_loss.cpu().detach()

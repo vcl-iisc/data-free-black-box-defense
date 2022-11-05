@@ -21,7 +21,7 @@ if __name__ == "__main__":
     #load DBMA model
     dbma = create_dbma_model(args=args)  # convert to data parallel
     state_dict = torch.load("./checkpoints/{}/{}.pth".format(args.name, args.epoch))
-    dbma.load_state_dict(state_dict["model_state_dict"])
+    #dbma.load_state_dict(state_dict["model_state_dict"])
     dbma.to(device)
     dbma.eval()
 
@@ -31,10 +31,14 @@ if __name__ == "__main__":
     surrogate_model.eval()
     victim_model.eval()
 
+    normalization = torchvision.transforms.Normalize(mean=(0.5), std=(0.5)).to(device)
+
+    normalized_Surrogate_model = nn.Sequential(normalization, surrogate_model)
+    normalized_Surrogate_model.eval()
 
     # attack performed on surrogate models
-    normalization = torchvision.transforms.Normalize(mean=(0.5), std=(0.5)).to(device)
-    attack = get_test_attack(args.dataset, args.attack, nn.Sequential(normalization, surrogate_model))
+    attack = get_test_attack(args.dataset, args.attack, normalized_Surrogate_model)
+    
 
     test_dataset = load_dataset(args.dataset)
     test_loader = test_dataset.test_dataloader(batch_size=args.batch_size)

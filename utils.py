@@ -1,9 +1,9 @@
 import torch
 
 from model_stealing.predictors import Alexnet, AlexnetHalf
-from model_stealing.predictors.dbma.dbma import DBMA
-from model_stealing.predictors.dbma.WNR import WNR
-from model_stealing.predictors.dbma.unet import UnetGenerator, get_norm_layer
+from dbma.dbma import DBMA
+from dbma.WNR import WNR
+from dbma.unet import UnetGenerator, get_norm_layer
 from model_stealing.predictors import ResNet18
 
 def get_model(name, path):
@@ -26,6 +26,7 @@ def create_dbma_model(args=None):
     regen = UnetGenerator(3, 3, 5, 64, norm_layer, False)
     dbma = DBMA(wnr, regen)
     return dbma
+
 
 
 if __name__ == "__main__":

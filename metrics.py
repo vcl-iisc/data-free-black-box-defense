@@ -19,7 +19,9 @@ class Metric(Accuracy):
         self.key = "train" if train else "test"
 
     def update(self, predictions, labels):
-        accuracy = {"{}_clean_acc".format(self.key): self.clean_acc(predictions["pred_clean_images"], labels),
+        
+        accuracy = {
+                    "{}_clean_acc".format(self.key): self.clean_acc(predictions["pred_clean_images"], labels),
                     "{}_wv_clean_acc".format(self.key): self.wv_clean_acc(predictions["pred_clean_wv_images"], labels),
                     "{}_regen_clean_acc".format(self.key): self.regen_clean_acc(predictions["pred_clean_regen_images"],
                                                                                 labels),
@@ -30,7 +32,8 @@ class Metric(Accuracy):
         return accuracy
 
     def compute(self):
-        accuracy = {"{}_clean_acc".format(self.key): self.clean_acc.compute(),
+        accuracy = {
+            "{}_clean_acc".format(self.key): self.clean_acc.compute(),
                     "{}_wv_clean_acc".format(self.key): self.wv_clean_acc.compute(),
                     "{}_regen_clean_acc".format(self.key): self.regen_clean_acc.compute(),
                     "{}_adv_acc".format(self.key): self.adv_acc.compute(),

@@ -4,7 +4,17 @@ import torch
 
 import setup
 import trainer
-from normalization import Denormalize
+
+class Denormalize(nn.Module):
+    def __init__(self, mean, std):
+        super(Denormalize, self).__init__()
+        self.mean = torch.nn.Parameter(torch.Tensor(mean).view(1, len(mean), 1, 1), requires_grad=False)
+        self.std = torch.nn.Parameter(torch.Tensor(std).view(1, len(mean), 1, 1), requires_grad=False)
+
+    def forward(self, input):
+        return (input * self.std) + self.mean
+
+
 
 if __name__ == '__main__':
 
@@ -44,7 +54,6 @@ if __name__ == '__main__':
     x = None
     y = None
     denorm = Denormalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-    import torch
 
     for i in range(2):
         dataloader = student_dataset.train_dataloader(i)
@@ -70,7 +79,7 @@ if __name__ == '__main__':
     torch.save(x, "{}/images.pt".format(env.save_path))
     torch.save(y, "{}/labels.pt".format(env.save_path))
 
-import torch
+
 
 x = torch.load("{}/images.pt".format(env.save_path))
 y = torch.load("{}/labels.pt".format(env.save_path))
