@@ -1,6 +1,6 @@
 
 #  data-free-black-box-defense
-Adversarial defense of black box models in data free setup [Paper](https://arxiv.org/abs/2211.01579)
+Data-free Defense of Black Box Models Against Adversarial Attacks - Official Implementation [Paper](https://arxiv.org/abs/2211.01579)
 
 ## Prerequisites
 - Download blackbox models, generative models , and DBMA checkpoints from https://drive.google.com/drive/u/0/folders/18WwA6bT4N4vwevRVYGodbQMezudjfjD3
