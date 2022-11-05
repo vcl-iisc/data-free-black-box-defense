@@ -2,13 +2,14 @@
 #  data-free-black-box-defense
 Adversarial defense of black box models in data free setup [Paper](https://arxiv.org/abs/2211.01579)
 
-## Downloads
+## Prerequisites
 - Download blackbox models, generative models , and DBMA checkpoints from https://drive.google.com/drive/u/0/folders/18WwA6bT4N4vwevRVYGodbQMezudjfjD3
 
 - Store DBMA model checkpoints in directory ./checkpoints
 
 - Store  black-box and generative model checkpoints in ./model_stealing/checkpoints/
 
+- Model stealing code is adapted from (black box ripper)[https://github.com/antoniobarbalau/black-box-ripper]
 
 ## Setup
 Following commands train DBMA for 
@@ -66,7 +67,7 @@ python test.py --dataset svhn --attack PGD --wvlt db1 --mode symmetric --levels 
 Download required checkpoints of dbma and surrogate model from
 [drive](https://drive.google.com/drive/u/0/folders/18WwA6bT4N4vwevRVYGodbQMezudjfjD3)
 
-run test script with by replacing the paths 
+run test script by replacing the paths 
 
 
 
