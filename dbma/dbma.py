@@ -26,3 +26,6 @@ class DBMA(nn.Module):
         output["regen_images"] = regen_clean_images
 
         return output
+
+    def parameters(self ):
+        return self.regen_network.parameters()
