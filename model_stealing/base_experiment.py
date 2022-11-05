@@ -21,8 +21,8 @@ if __name__ == '__main__':
     arg_parser.add_argument('--levels', type=int, default=2)
     arg_parser.add_argument('--input_nc', type=int, default=3)
     arg_parser.add_argument('--keep_percentage', type=int, default=15)
-    arg_parser.add_argument('--regen_path', type=str, default=None)
-    arg_parser.add_argument('--regen_name', type=str, default="", help="name of regenerator network")
+    arg_parser.add_argument('--dbma_path', type=str, default=None)
+    arg_parser.add_argument('--dbma_name', type=str, default="", help="name of regenerator network")
 
     arg_parser.add_argument('--retrain', action='store_true')
     arg_parser.add_argument("--name", type=str, help="name by which model checkpoints are saved")

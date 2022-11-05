@@ -21,7 +21,7 @@ if __name__ == "__main__":
     #load DBMA model
     dbma = create_dbma_model(args=args)  # convert to data parallel
     state_dict = torch.load("./checkpoints/{}/{}.pth".format(args.name, args.epoch))
-    #dbma.load_state_dict(state_dict["model_state_dict"])
+    dbma.load_state_dict(state_dict["model_state_dict"])
     dbma.to(device)
     dbma.eval()
 

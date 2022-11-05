@@ -6,10 +6,12 @@ import torch.nn as nn
 
 class DBMADefense(nn.Module):
 
-    def __init__(self, dbma, victim_model):
+    def __init__(self,dbma, victim_model):
         super(DBMADefense, self).__init__()
         self.dbma  = dbma
         self.victim_model = victim_model
+        self.name = "dbma"
+        self.n_outputs=10
 
     def forward(self, images):
         output = self.dbma(images)
