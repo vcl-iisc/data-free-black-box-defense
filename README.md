@@ -18,7 +18,7 @@ Teacher : Alexnet ,  Defender surroate :  Resnet18
  , Attacker Surrogate : Alexnet_half
  , Dataset : SVHN
 
-###A. Training
+### A. Training
 
 #### 1. Train Defender Surrogate model
 
@@ -50,7 +50,7 @@ python plot_roc.py --dataset svhn --attack PGD --wvlt db1 --mode symmetric --lev
 python train.py --dataset svhn --name Alexnet_resnet18_svhn_cosim_kl_wc_2_20 --attack PGD --wvlt db1 --mode symmetric --levels 2 --keep_percentage 20 --batch_size 512 --n_epochs 140  --loss cosim_kl_wc --lr_policy linear --lr 0.0002   --n_epochs_decay 160 --gpu_id 0   --surrogate_model_path  model_stealing/checkpoints/student_resnet18_teacher_alexnet_svhn_cifar_100_90_classes_gan_adam_75_state_dict --surrogate_model_name resnet18 --synthetic_dataset_path data/teacher_alexnet_student_resnet18_svhn_synthetic/ 
 ```
 
-###B. Evaluation.
+### B. Evaluation.
 
 #### 5. Create Attacker surrogate model
 ```
