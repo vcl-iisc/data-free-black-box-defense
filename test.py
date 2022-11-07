@@ -1,163 +1,83 @@
-# original Test.py
-
-"""General-purpose test script for image-to-image translation.
-
-Once you have trained your model with train.py, you can use this script to test the model.
-It will load a saved model from '--checkpoints_dir' and save the results to '--results_dir'.
-
-It first creates model and dataset given the option. It will hard-code some parameters.
-It then runs inference for '--num_test' images and save results to an HTML file.
-
-Example (You need to train models first or download pre-trained models from our website):
-    Test a CycleGAN model (both sides):
-        python test.py --dataroot ./datasets/maps --name maps_cyclegan --model cycle_gan
-
-    Test a CycleGAN model (one side only):
-        python test.py --dataroot datasets/horse2zebra/testA --name horse2zebra_pretrained --model test --no_dropout
-
-    The option '--model test' is used for generating CycleGAN results only for one side.
-    This option will automatically set '--dataset_mode single', which only loads the images from one set.
-    On the contrary, using '--model cycle_gan' requires loading and generating results in both directions,
-    which is sometimes unnecessary. The results will be saved at ./results/.
-    Use '--results_dir <directory_path_to_save_result>' to specify the results directory.
-
-    Test a pix2pix model:
-        python test.py --dataroot ./datasets/facades --name facades_pix2pix --model pix2pix --direction BtoA
-
-See options/base_options.py and options/test_options.py for more test options.
-See training and test tips at: https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/docs/tips.md
-See frequently asked questions at: https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/docs/qa.md
-"""
-
-""" 
-This code is similar to test.py . but here we are testing accuracy of model on dataset generated from image generator
-1) generator generates set of image
-2) teacher model computes the labels
-3) using that (image, label) pair test I2I+teacher, or adversarial accuracy of teacher
-"""
-import os
-from options.test_options import TestOptions
-from data import create_dataset
-from models import create_model, gan
-from util.visualizer import save_images
-from util import html
-from utils import load_data
 import torch
+import torchvision
+from torch import nn
 
+import wandb
+from adversarial_attacks import get_test_attack
+from datasets.utils import load_dataset
+from metrics import Metric
+from options import test_options
+from utils import create_dbma_model, get_model
 
-try:
-    import wandb
-except ImportError:
-    print('Warning: wandb package cannot be found. The option "--use_wandb" will result in error.')
+if __name__ == "__main__":
 
+    arg_parser = test_options.test_options()
+    args = arg_parser.parse_args()
 
-if __name__ == '__main__':
-    opt = TestOptions().parse()  # get test options
-    # hard-code some parameters for test
-    opt.adv = False
-    opt.num_threads = 0   # test code only supports num_threads =   # test code only supports batch_size = 1
-    opt.serial_batches = True  # disable data shuffling; comment this line if results on randomly chosen images are needed.
-    opt.no_flip = True    # no flip; comment this line if results on flipped images are needed.
-    opt.display_id = -1   # no visdom display; the test code saves the results to a HTML file.
-    
-    _, dataset = load_data(batch_size=opt.batch_size, transform_type=None, return_data=opt.SaveTestImages, transform=False, translated_path='l2keep15inl2_togenl1_G60D1_keep15', dataroot=opt.dataroot)  # Normalize=True,
-    
-    
-    model = create_model(opt)      # create a model given opt.model and other options
-    model.setup(opt)               # regular setup: load and print networks; create schedulers
-    model.init_metrics()
-    
-    print(f'The number of testing images = {len(dataset)*opt.batch_size}')
-    
-    # initialize logger
-    if opt.use_wandb:
-        wandb_run = wandb.init(project='CycleGAN-and-pix2pix', name=opt.name, config=opt) if not wandb.run else wandb.run
-        wandb_run._label(repo='CycleGAN-and-pix2pix')
+    wandb.init(project="data_free_black_box_defense_test", name=args.name)
 
-    # create a website
-    web_dir = os.path.join(opt.results_dir, opt.name, '{}_{}'.format(opt.phase, opt.epoch))  # define the website directory
-    
-    if opt.load_iter > 0:  # load_iter is 0 by default
-        web_dir = '{:s}_iter{:d}'.format(web_dir, opt.load_iter)
-    
-    print('creating web directory', web_dir)
-    webpage = html.HTML(web_dir, 'Experiment = %s, Phase = %s, Epoch = %s' % (opt.name, opt.phase, opt.epoch))
-    # test with eval mode. This only affects layers like batchnorm and dropout.
-    # For [pix2pix]: we use batchnorm and dropout in the original pix2pix. You can experiment it with and without eval() mode.
-    # For [CycleGAN]: It should not affect CycleGAN as CycleGAN uses instancenorm without dropout.
-    if opt.eval:
-        model.eval()
+    device = torch.device("cuda:{}".format(args.gpu_id)) if torch.cuda.is_available() else torch.device('cpu')
 
-    
-    for i, data in enumerate(dataset):
-        
-        model.set_input(data)  # unpack data from data loader
-     
-        model.test()           # run inference
-#         visuals = model.get_current_visuals()  # get image results
-#         img_path = model.get_image_paths()     # get image paths
-        model.eval_teacher()
-        
+    #load DBMA model
+    dbma = create_dbma_model(args=args)  # convert to data parallel
+    state_dict = torch.load("./checkpoints/{}/{}.pth".format(args.name, args.epoch))
+    dbma.load_state_dict(state_dict["model_state_dict"])
+    dbma.to(device)
+    dbma.eval()
 
-        """ if i % 1000000 == 0:  # save images to an HTML file
-            print(i)    
-            print('Accuracy on Original image',(model.og_metrics['correct'] / model.og_metrics['total']) * 100.)
-            print('Accuracy on Adv image',(model.adv_metrics['correct'] / model.adv_metrics['total']) * 100.)
-            print('Accuracy on LP clean image',(model.lp_metrics['correct'] / model.lp_metrics['total']) * 100.)
-            print('Accuracy on LP Adv image',(model.lp_adv_metrics['correct'] / model.lp_adv_metrics['total']) * 100.)
-            print('Accuracy on generated clean image',(model.gen_metrics['correct'] / model.gen_metrics['total']) * 100.)
-            print('Accuracy on generated Adv image',(model.gen_adv_metrics['correct'] / model.gen_adv_metrics['total']) * 100.)"""
-#             #print('processing (%04d)-th image... %s' % (i, img_path))
-#         #save_images(webpage, visuals, img_path, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize, use_wandb=opt.use_wandb)
-#     webpage.save()  # save the HTML
-    print(model.og_metrics['total'])
-    print('Final Accuracy on Original image',(model.og_metrics['correct'] / model.og_metrics['total']) * 100.)
-    print('Final Accuracy on Adv image',(model.adv_metrics['correct'] / model.adv_metrics['total']) * 100.)
-    print('Final Accuracy on lp clean image',(model.lp_metrics['correct'] / model.lp_metrics['total']) * 100.)
-    print('Final Accuracy on lp Adv image',(model.lp_adv_metrics['correct'] / model.lp_adv_metrics['total']) * 100.)
-    print('Final Accuracy on lp_I2I generated clean image',(model.gen_metrics['correct'] / model.gen_metrics['total']) * 100.)
-    print('Final Accuracy on lp_I2I generated Adv image',(model.gen_adv_metrics['correct'] / model.gen_adv_metrics['total']) * 100.)  
-    print("clean accuracy of attacker's surrogate model",(model.surrogate_og_metrics['correct'] / model.surrogate_og_metrics['total']) * 100.)
-    print("clean accuracy of defender's surrogate model",(model.defender_surrogate_og_metrics['correct'] / model.defender_surrogate_og_metrics['total']) * 100.)
-   
-    with open(opt.save_results_file, 'a+') as f:
-        print(opt.name, file=f)
-        print(opt.surrogate_teacher_model , file=f , end=" ")
-        print(opt.transform_type, file=f, end=" ")
-        print(opt.decomposition_level , file=f, end=" ")
-        print(opt.coefficients_percent , file=f, end=" ")
-        print(opt.attack , file=f)
-        print(opt.epoch, file=f)
-        print(opt.surrogate_load_path, file=f)
-        print('Final Accuracy on Original image',(model.og_metrics['correct'] / model.og_metrics['total']) * 100. , file =f)
-        print('Final Accuracy on Adv image',(model.adv_metrics['correct'] / model.adv_metrics['total']) * 100., file =f)
-        print('Final Accuracy on lp clean image',(model.lp_metrics['correct'] / model.lp_metrics['total']) * 100., file =f)
-        print('Final Accuracy on lp Adv image',(model.lp_adv_metrics['correct'] / model.lp_adv_metrics['total']) * 100., file =f)
-        print('Final Accuracy on lp_I2I generated clean image',(model.gen_metrics['correct'] / model.gen_metrics['total']) * 100., file =f)
-        print('Final Accuracy on lp_I2I generated Adv image',(model.gen_adv_metrics['correct'] / model.gen_adv_metrics['total']) * 100., file =f)  
-        print("clean accuracy of attacker's surrogate model",(model.surrogate_og_metrics['correct'] / model.surrogate_og_metrics['total']) * 100. , file=f)
-        print("clean accuracy of defender's surrogate model",(model.defender_surrogate_og_metrics['correct'] / model.defender_surrogate_og_metrics['total']) * 100. , file=f)
-        
-        print("**************************", file=f)
+    surrogate_model  = get_model(args.surrogate_model_name, args.surrogate_model_path).to(device)
+    victim_model = get_model(args.victim_model_name, args.victim_model_path).to(device)
+
+    surrogate_model.eval()
+    victim_model.eval()
+
+    normalization = torchvision.transforms.Normalize(mean=(0.5), std=(0.5)).to(device)
+
+    normalized_Surrogate_model = nn.Sequential(normalization, surrogate_model)
+    normalized_Surrogate_model.eval()
+
+    # attack performed on surrogate models
+    attack = get_test_attack(args.dataset, args.attack, normalized_Surrogate_model)
     
-    if opt.SaveTestImages:
-        Final_data = {}
-#         Final_data['Clean_Orig'] = model.data_list_orig
-#         Final_data['Clean_input_ll'] = model.data_list_ll_input
-        Final_data['Adv'] = model.adv_data_list
-#         Final_data['Clean_ll'] = model.data_list_ll
-        if opt.adv==True:
-#             Final_data['Adv_Orig'] = model.adv_data_list_orig
-#             Final_data['Adv_input_ll'] = model.adv_data_list_ll_input
-            Final_data['Adv_translated'] = model.data_list
-#             Final_data['Adv_ll'] = model.adv_data_list_ll 
-        
-        torch.save(Final_data,f'./data/baseline_resnet18/Cifar10_PGD_step7_train.pt')
-#         torch.save(model.data_list,f'./data/translated_ll1_{opt.name}_test.pt')
-#         torch.save(model.data_list_orig,f'./data/GT_{opt.name}.pt')
-#         torch.save(model.data_list_ll,f'./data/LL_ll1_{opt.name}_test.pt')
-#         torch.save(model.data_list_ll_input,f'./data/LL_input_ll1_{opt.name}_test.pt')
-#         if i % 5 == 0:  # save images to an HTML file
-#             print('processing (%04d)-th image... %s' % (i, img_path))
-#         save_images(webpage, visuals, img_path, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize, use_wandb=opt.use_wandb)
-#     webpage.save()  # save the HTML
+
+    test_dataset = load_dataset(args.dataset)
+    test_loader = test_dataset.test_dataloader(batch_size=args.batch_size)
+
+    print("number of test images: ", len(test_loader) * args.batch_size)
+
+    metric = Metric(train=False).to(device)
+
+    for i, data in enumerate(test_loader):
+        clean_images, labels = data
+        clean_images = clean_images.to(device)
+        labels = labels.to(device)
+
+        adv_images = attack(clean_images, labels)
+        adv_images = adv_images.to(device)
+
+        with torch.no_grad():
+            clean_images, adv_images = normalization(clean_images), normalization(adv_images)
+
+            output_clean = dbma(clean_images)
+            output_clean = {"clean_" + k: v for k, v in output_clean.items()}
+
+            output_adv = dbma(adv_images)
+            output_adv = {"adv_" + k: v for k, v in output_adv.items()}
+
+            output_clean.update(output_adv)
+            output = output_clean
+
+            predictions={}
+
+            for k, v in output.items():
+                prediction = victim_model(v)
+                key = "pred_" + k
+                predictions[key] = prediction
+
+            metric.update(predictions, labels)
+
+    accuracy = metric.compute()
+    accuracy = {k: v.item() for k, v in accuracy.items()}
+
+    wandb.log(accuracy)
+    wandb.finish()
